@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "randomitemchallenge",
+	"version": "${version}",
+	"name": "Random Item Challenge",
+	"description": "Fun Mini-Game to play with as many friends as you want, where you get a random drop every 15 seconds and use that to pvp. Last one standing wins. Everything is highly configurable, including the drops, the delay between drops, and much more.",
+	"authors": [
+		"Coolbou0427"
+	],
+	"contact": {
+		"sources": "https://github.com/coolbou0427"
+	},
+	"license": "AGPL-3.0",
+	"icon": "assets/ric/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"jaxon.ric.Random_Item_Challenge"
+		]
+	},
+	"mixins": [
+		"random_item_challenge.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.6",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
