@@ -14,6 +14,7 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -25,45 +26,46 @@ public class SettingsCommands {
                         .then(CommandManager.literal("delay")
                                 .executes(SettingsCommands::showDelay)
                                 .then(CommandManager.argument("seconds", DoubleArgumentType.doubleArg())
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.delay", 2))
                                         .executes(c -> changeDelay(c, DoubleArgumentType.getDouble(c, "seconds")))))
                         .then(CommandManager.literal("numberPerTeam")
                                 .executes(SettingsCommands::showNumberPerTeam)
                                 .then(CommandManager.argument("value", IntegerArgumentType.integer())
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.numberperteam", 2))
                                         .executes(c -> changeNumberPerTeam(c, IntegerArgumentType.getInteger(c, "value")))))
                         .then(CommandManager.literal("testMode")
                                 .executes(c -> showSetting(c, "testMode"))
                                 .then(CommandManager.argument("value", StringArgumentType.word())
                                         .suggests((c, b) -> CommandSource.suggestMatching(new String[]{"true","false"}, b))
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.testmode", 2))
                                         .executes(c -> changeSetting(c, "testMode"))))
                         .then(CommandManager.literal("resumeMode")
                                 .executes(c -> showSetting(c, "resumeMode"))
                                 .then(CommandManager.argument("value", StringArgumentType.word())
                                         .suggests((c, b) -> CommandSource.suggestMatching(new String[]{"true","false"}, b))
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.resumemode", 2))
                                         .executes(c -> changeSetting(c, "resumeMode"))))
                         .then(CommandManager.literal("teamMode")
                                 .executes(c -> showSetting(c, "teamMode"))
                                 .then(CommandManager.argument("value", StringArgumentType.word())
                                         .suggests((c, b) -> CommandSource.suggestMatching(new String[]{"true","false"}, b))
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.teammode", 2))
                                         .executes(c -> changeSetting(c, "teamMode"))))
                         .then(CommandManager.literal("enableMobFriendlyFire")
                                 .executes(c -> showSetting(c, "enableMobFriendlyFire"))
                                 .then(CommandManager.argument("value", StringArgumentType.word())
                                         .suggests((c, b) -> CommandSource.suggestMatching(new String[]{"true","false"}, b))
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.mobfriendlyfire", 2))
                                         .executes(c -> changeSetting(c, "enableMobFriendlyFire"))))
                         .then(CommandManager.literal("autoTntIgnite")
                                 .executes(c -> showSetting(c, "autoTntIgnite"))
                                 .then(CommandManager.argument("value", StringArgumentType.word())
                                         .suggests((c, b) -> CommandSource.suggestMatching(new String[]{"true","false"}, b))
-                                        .requires(s -> s.hasPermissionLevel(2))
+                                        .requires(Permissions.require("ric.settings.autotntignite", 2))
                                         .executes(c -> changeSetting(c, "autoTntIgnite"))))
         );
     }
+
 
     private static int showNumberPerTeam(CommandContext<ServerCommandSource> c) {
         c.getSource().sendFeedback(() -> Text.literal("Number per team is set to " + GoCommand.numberPerTeam).formatted(Formatting.AQUA), false);

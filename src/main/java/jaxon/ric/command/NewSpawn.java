@@ -3,6 +3,7 @@ package jaxon.ric.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.command.ServerCommandSource;
@@ -13,7 +14,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.chunk.Chunk;
@@ -35,7 +35,7 @@ public class NewSpawn {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("newspawn")
-                .requires(src -> src.hasPermissionLevel(2))
+                .requires(Permissions.require("ric.newspawn", 2))
                 .executes(NewSpawn::newSpawn));
     }
 
@@ -73,7 +73,7 @@ public class NewSpawn {
         return success ? 1 : 0;
     }
 
-    private static boolean commonChecks(ServerWorld world, int x, int z, int baseX, int baseZ, Set<Long> visited) {
+    private static boolean commonChecks(int x, int z, int baseX, int baseZ, Set<Long> visited) {
         long dx = x - baseX, dz = z - baseZ;
         if (dx * dx + dz * dz < (long) MIN_DIST * MIN_DIST) return false;
         int cx = x >> 4, cz = z >> 4;
@@ -95,7 +95,7 @@ public class NewSpawn {
             for (int n = 0; n <= NEAR_ATTEMPTS; n++) {
                 int x = n == 0 ? baseCandidateX : baseCandidateX + rnd.nextInt(-NEAR_RADIUS, NEAR_RADIUS + 1);
                 int z = n == 0 ? baseCandidateZ : baseCandidateZ + rnd.nextInt(-NEAR_RADIUS, NEAR_RADIUS + 1);
-                if (!commonChecks(world, x, z, baseX, baseZ, visited)) continue;
+                if (!commonChecks(x, z, baseX, baseZ, visited)) continue;
 
                 BlockPos biomePos = new BlockPos(x, 64, z);
                 RegistryKey<Biome> key = world.getBiome(biomePos).getKey().orElse(null);
@@ -126,12 +126,12 @@ public class NewSpawn {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             int x = rnd.nextInt(-RANGE, RANGE + 1);
             int z = rnd.nextInt(-RANGE, RANGE + 1);
-            if (!commonChecks(world, x, z, baseX, baseZ, visited)) continue;
+            if (!commonChecks(x, z, baseX, baseZ, visited)) continue;
 
             for (int y = 118; y >= 32; y--) {
                 BlockPos pos = new BlockPos(x, y, z);
                 if (!world.getBlockState(pos).isSolidBlock(world, pos)) continue;
-                if (!isClearAbove(world, pos, 4)) continue;
+                if (!isClearAbove(world, pos)) continue;
 
                 RegistryEntry<Biome> biomeEntry = world.getBiome(pos);
                 RegistryKey<Biome> biomeKey = biomeEntry.getKey().orElse(null);
@@ -152,13 +152,13 @@ public class NewSpawn {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             int x = rnd.nextInt(-RANGE, RANGE + 1);
             int z = rnd.nextInt(-RANGE, RANGE + 1);
-            if (!commonChecks(world, x, z, baseX, baseZ, visited)) continue;
+            if (!commonChecks(x, z, baseX, baseZ, visited)) continue;
 
             Chunk chunk = world.getChunk(x >> 4, z >> 4);
             int y = chunk.sampleHeightmap(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15) + 1;
             BlockPos ground = new BlockPos(x, y - 1, z);
             if (!world.getBlockState(ground).isSolidBlock(world, ground)) continue;
-            if (countSolidBlocks(world, ground, 8) < 64) continue;
+            if (countSolidBlocks(world, ground) < 64) continue;
 
             player.requestTeleport(x + 0.5, y, z + 0.5);
             return true;
@@ -166,17 +166,17 @@ public class NewSpawn {
         return false;
     }
 
-    private static boolean isClearAbove(ServerWorld world, BlockPos pos, int height) {
-        for (int i = 1; i <= height; i++) {
+    private static boolean isClearAbove(ServerWorld world, BlockPos pos) {
+        for (int i = 1; i <= 4; i++) {
             if (!world.isAir(pos.up(i))) return false;
         }
         return true;
     }
 
-    private static int countSolidBlocks(ServerWorld world, BlockPos center, int radius) {
+    private static int countSolidBlocks(ServerWorld world, BlockPos center) {
         int count = 0;
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dz = -8; dz <= 8; dz++) {
                 if (world.getBlockState(center.add(dx, 0, dz)).isSolidBlock(world, center)) count++;
             }
         }

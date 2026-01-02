@@ -1,14 +1,18 @@
 {
-	"required": true,
-	"package": "jaxon.ric.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"mixins": [
-		"DidSomeoneDie",
-		"MobEggTeamMixin",
-		"FireChargeItemMixin",
-		"AutoIgniteTNT"
-	],
-	"injectors": {
-		"defaultRequire": 1
+  "required": true,
+  "package": "jaxon.ric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "AutoIgniteTNT",
+    "DidSomeoneDie",
+    "FireChargeItemMixin",
+    "HappyGhastGoalsMixin",
+    "MobEntityGoalSelectorAccessor",
+    "SkeletonHorseTrapTriggerGoalMixin",
+    "SpawnFromItemStackMixin",
+    "SpawnFromItemStackMixin$EntityAddPassengerInvoker"
+  ],
+  "injectors": {
+    "defaultRequire": 1
 	}
 }

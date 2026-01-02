@@ -6,7 +6,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import jaxon.ric.Random_Item_Challenge;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.CommandManager;
@@ -57,7 +56,7 @@ public class TeamsCommand {
         }
 
         String id = sanitize(displayName);
-        String player = Objects.requireNonNull(context.getSource().getPlayer()).getGameProfile().getName();
+        String player = Objects.requireNonNull(context.getSource().getPlayer()).getName().getString();
         Scoreboard board = context.getSource().getServer().getScoreboard();
         Team current = board.getScoreHolderTeam(player);
 

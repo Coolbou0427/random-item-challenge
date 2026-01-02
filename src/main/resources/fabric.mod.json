@@ -22,8 +22,8 @@
 		"random_item_challenge.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.14",
-		"minecraft": "~1.21.6",
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

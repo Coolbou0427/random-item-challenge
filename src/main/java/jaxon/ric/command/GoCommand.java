@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import jaxon.ric.Gamerz;
 import jaxon.ric.Random_Item_Challenge;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
@@ -12,13 +13,12 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.scoreboard.ServerScoreboard;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
-import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.WorldProperties;
 
 import java.util.*;
 
@@ -37,11 +37,11 @@ public class GoCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(
                 LiteralArgumentBuilder.<ServerCommandSource>literal("go")
-                        .requires(src -> src.hasPermissionLevel(2))
+                        .requires(Permissions.require("ric.go", 2))
                         .executes(GoCommand::executeGoCommand)
-                        .then(CommandManager.literal("teams").requires(src -> src.hasPermissionLevel(2))
+                        .then(CommandManager.literal("teams").requires(Permissions.require("ric.go.teams", 2))
                                 .executes(GoCommand::automaticTeams)
-                                .then(CommandManager.literal("choose").requires(src -> src.hasPermissionLevel(2))
+                                .then(CommandManager.literal("choose").requires(Permissions.require("ric.go.teams.choose", 2))
                                         .executes(GoCommand::chooseTeams)
                                 )
                         )
@@ -53,7 +53,6 @@ public class GoCommand {
         ServerCommandSource source = context.getSource();
         playerName = Objects.requireNonNull(source.getPlayer()).getName().getString();
         MinecraftServer server = source.getServer();
-        ServerScoreboard scoreboard = server.getScoreboard();
         List<ServerPlayerEntity> gamertags = new ArrayList<>(server.getPlayerManager().getPlayerList());
         Gamerz.gamersList.clear();
         for (ServerPlayerEntity gamer : gamertags) {
@@ -127,8 +126,9 @@ public class GoCommand {
             ServerPlayerEntity player = srv.getPlayerManager().getPlayer(playerName);
             if (player == null) return;
 
-            Vec3d pos = player.getPos();
-            double px = pos.getX(), py = pos.getY(), pz = pos.getZ();
+            double px = player.getX();
+            double py = player.getY();
+            double pz = player.getZ();
 
             // Overworld center
             ServerWorld overworld = srv.getWorld(World.OVERWORLD);
@@ -149,10 +149,12 @@ public class GoCommand {
             }
 
             // Set spawn in current dimension
-            RegistryKey<World> currentKey = player.getWorld().getRegistryKey();
+            RegistryKey<World> currentKey = player.getEntityWorld().getRegistryKey();
             ServerWorld current = srv.getWorld(currentKey);
             if (current != null) {
-                current.setSpawnPos(new BlockPos((int) px, (int) py, (int) pz), 0.0f);
+                BlockPos bp = BlockPos.ofFloored(px, py, pz);
+                GlobalPos gp = GlobalPos.create(current.getRegistryKey(), bp);
+                current.setSpawnPoint(new WorldProperties.SpawnPoint(gp, 0.0f, 0.0f));
             }
         } catch (Exception e) {
             Random_Item_Challenge.LOGGER.error("Error in centering borders", e);

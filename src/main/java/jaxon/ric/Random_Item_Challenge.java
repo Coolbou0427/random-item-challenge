@@ -95,9 +95,11 @@ public class Random_Item_Challenge implements ModInitializer {
 		Gamerz.maxHealthAndMaxHunger();
 		Items.dayChanceAndRainChance();
 		StopCommand.isRunning = true;
+
 		mainThread = new Thread(() -> {
 			while (StopCommand.isRunning) {
-				if (server.isPaused()) {
+				boolean shouldPauseTimer = !server.isDedicated() && server.isPaused();
+				if (shouldPauseTimer) {
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -111,9 +113,7 @@ public class Random_Item_Challenge implements ModInitializer {
 						List<String> gamerNamesSnapshot = new ArrayList<>(Gamerz.getAllPlayerNames());
 						for (String gamerName : gamerNamesSnapshot) {
 							ServerPlayerEntity playerEntity = server.getPlayerManager().getPlayer(gamerName);
-							if (playerEntity == null || !playerEntity.isAlive()) {
-								continue;
-							}
+							if (playerEntity == null || !playerEntity.isAlive()) continue;
 
 							Gamerz gamer = Gamerz.findByName(gamerName);
 							if (gamer == null) continue;
@@ -130,27 +130,13 @@ public class Random_Item_Challenge implements ModInitializer {
 									ServerPlayerEntity p = server.getPlayerManager().getPlayer(gamerName);
 									if (p == null || p.interactionManager.getGameMode() == SPECTATOR) continue;
 
-									sendCommand(String.format("give %s %s", gamerName, givenItem), () -> {
-										LOGGER.warn("failed to give item " + givenItem + ". please check the spelling and that it exists");
-										WeightedItem fallback = WeightedItem.selectRandom(gamer.getPlayerItemsList(), gamerName);
-										if (fallback != null) {
-											sendCommand(String.format("give %s %s", gamerName, fallback.getItems().get(0)));
-											gamer.removeItem(fallback);
-										}
-									});
+									tryGiveOrFallback(gamerName, gamer, givenItem);
 
 									if (randomItems.containsKey(givenItem)) {
 										List<String> opts = randomItems.get(givenItem);
 										if (!opts.isEmpty()) {
 											String rand = opts.get(SafeRandom.getNextInt(opts.size()));
-											sendCommand(String.format("give %s %s", gamerName, rand), () -> {
-												LOGGER.warn("failed to give item " + rand + ". please check the spelling and that it exists");
-												WeightedItem fallback = WeightedItem.selectRandom(gamer.getPlayerItemsList(), gamerName);
-												if (fallback != null) {
-													sendCommand(String.format("give %s %s", gamerName, fallback.getItems().get(0)));
-													gamer.removeItem(fallback);
-												}
-											});
+											tryGiveOrFallback(gamerName, gamer, rand);
 										}
 									}
 								}
@@ -163,10 +149,19 @@ public class Random_Item_Challenge implements ModInitializer {
 					double localDelay = delay;
 					int sleepInterval = 100;
 					int elapsedTime = 0;
+
 					while (elapsedTime < localDelay * 1000 && StopCommand.isRunning) {
 						if (Thread.interrupted()) break;
+
+						boolean pauseTimerNow = !server.isDedicated() && server.isPaused();
+						if (pauseTimerNow) {
+							Thread.sleep(100);
+							continue;
+						}
+
 						Thread.sleep(sleepInterval);
 						elapsedTime += sleepInterval;
+
 						if (localDelay != delay) {
 							break;
 						}
@@ -179,31 +174,64 @@ public class Random_Item_Challenge implements ModInitializer {
 				}
 			}
 		});
+
 		mainThread.start();
+	}
+
+	private static void tryGiveOrFallback(String gamerName, Gamerz gamer, String itemArg) {
+		String cmd = String.format("give %s %s", gamerName, itemArg);
+		boolean ok = executeCommandNow(cmd);
+		if (ok) return;
+
+		LOGGER.warn("failed to give item via command: " + cmd + ". trying fallback");
+		giveFallbackFromList(gamerName, gamer);
+	}
+
+	private static void giveFallbackFromList(String gamerName, Gamerz gamer) {
+		for (int i = 0; i < 25; i++) {
+			if (gamer.getPlayerItemsList().isEmpty()) {
+				Gamerz.fillOrRefillItemsList(gamerName);
+				if (gamer.getPlayerItemsList().isEmpty()) return;
+			}
+
+			WeightedItem fallback = WeightedItem.selectRandom(gamer.getPlayerItemsList(), gamerName);
+			if (fallback == null) return;
+
+			gamer.removeItem(fallback);
+
+			List<String> items = fallback.getItems();
+			if (items == null || items.isEmpty()) continue;
+
+			String fallbackArg = items.getFirst();
+			String fallbackCmd = String.format("give %s %s", gamerName, fallbackArg);
+
+			if (executeCommandNow(fallbackCmd)) return;
+
+			LOGGER.warn("fallback also failed: " + fallbackCmd);
+		}
+	}
+
+	private static boolean executeCommandNow(String command) {
+		try {
+			int result = server.getCommandManager().getDispatcher().execute(
+					server.getCommandManager().getDispatcher().parse(command, server.getCommandSource().withSilent())
+			);
+			return result > 0;
+		} catch (Exception e) {
+			LOGGER.error("Command failed: " + command, e);
+			return false;
+		}
 	}
 
 	public static void sendCommand(String command) {
 		server.execute(() -> {
 			try {
 				server.getCommandManager().getDispatcher().execute(
-						server.getCommandManager().getDispatcher().parse(command, server.getCommandSource().withLevel(4).withSilent())
+						server.getCommandManager().getDispatcher().parse(command, server.getCommandSource().withSilent())
 				);
 			} catch (Exception e) {
 				LOGGER.error("Unexpected exception during command execution", e);
 				LOGGER.info("Command was: " + command);
-			}
-		});
-	}
-
-	public static void sendCommand(String command, Runnable onFailure) {
-		server.execute(() -> {
-			try {
-				server.getCommandManager().getDispatcher().execute(
-						server.getCommandManager().getDispatcher().parse(command, server.getCommandSource().withLevel(4).withSilent())
-				);
-			} catch (Exception e) {
-				LOGGER.warn("failed to give item via command: " + command + ". please check the spelling and that it exists");
-				if (onFailure != null) onFailure.run();
 			}
 		});
 	}

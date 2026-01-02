@@ -18,9 +18,9 @@ public class StartGameCommands {
             "execute in minecraft:overworld run worldborder set 500",
             "execute in minecraft:the_nether run worldborder set 500",
             "execute in minecraft:the_end run worldborder set 500",
-            "execute in minecraft:overworld run worldborder set 30 180",
-            "execute in minecraft:the_nether run worldborder set 30 180",
-            "execute in minecraft:the_end run worldborder set 30 180",
+            "execute in minecraft:overworld run worldborder set 30 3600",
+            "execute in minecraft:the_nether run worldborder set 30 3600",
+            "execute in minecraft:the_end run worldborder set 30 3600",
             "kill @e[type=!player,type=!villager,type=!cow,type=!sheep,type=!chicken,type=!goat,type=!dolphin,type=!allay,type=!ender_dragon,type=!end_crystal,type=!armadillo]",
             "tp @a %s",
             "clear @a",
@@ -32,7 +32,7 @@ public class StartGameCommands {
             "item replace entity @a hotbar.8 with minecraft:compass[minecraft:custom_data={tracker:true}]"
     );
 
-    public static final List<String> resumeCommands = Arrays.asList(
+    public static final List<String> resumeCommands = List.of(
             "title @a title {\"text\":\"Random Items\",\"color\":\"blue\"}"
     );
 }

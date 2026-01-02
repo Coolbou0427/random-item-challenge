@@ -26,7 +26,7 @@ public abstract class FireChargeItemMixin {
         ItemStack stack = user.getStackInHand(hand);
         if (!(stack.getItem() instanceof FireChargeItem)) return;
 
-        if (!world.isClient) {
+        if (!world.isClient()) {
             Vec3d dir = user.getRotationVec(1.0F);
             FireballEntity fireball = new FireballEntity(world, user, dir, 1);
 
@@ -42,7 +42,7 @@ public abstract class FireChargeItemMixin {
             user.getItemCooldownManager().set(stack, 20);
         }
 
-        cir.setReturnValue(world.isClient
+        cir.setReturnValue(world.isClient()
                 ? ActionResult.SUCCESS
                 : ActionResult.CONSUME
         );

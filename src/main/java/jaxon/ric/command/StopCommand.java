@@ -3,6 +3,7 @@ package jaxon.ric.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import jaxon.ric.Random_Item_Challenge;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.scoreboard.Scoreboard;
@@ -15,7 +16,7 @@ public class StopCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("halt")
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(Permissions.require("ric.halt", 2))
                 .executes(StopCommand::stopEverything));
     }
 
