@@ -2,6 +2,7 @@ package jaxon.ric.ai;
 
 import jaxon.ric.command.GoCommand;
 import java.util.EnumSet;
+import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.entity.Leashable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -10,6 +11,7 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class HappyGhastHuntGoal extends Goal {
@@ -21,6 +23,17 @@ public class HappyGhastHuntGoal extends Goal {
     private static final double DIST_TOLERANCE = 1;
     private static final double ACQUIRE_RANGE = 48.0;
     private static final double CHASE_RANGE = 48.0;
+
+    private static final double PAYLOAD_PAD_XZ = 0.6;
+    private static final double BOAT_HANG_DOWN = 3.5;
+    private static final int CLEARANCE_TRIES = 10;
+    private static final double CLEARANCE_STEP_Y = 1.0;
+
+    private double lastDistSq = Double.NaN;
+    private int stuckTicks = 0;
+
+    private int detourTicks = 0;
+    private Vec3d detourPos = null;
 
     public HappyGhastHuntGoal(HappyGhastEntity ghast) {
         this.ghast = ghast;
@@ -60,6 +73,10 @@ public class HappyGhastHuntGoal extends Goal {
     @Override
     public void start() {
         retargetCooldown = 0;
+        lastDistSq = Double.NaN;
+        stuckTicks = 0;
+        detourTicks = 0;
+        detourPos = null;
     }
 
     @Override
@@ -90,6 +107,43 @@ public class HappyGhastHuntGoal extends Goal {
             return;
         }
 
+        ghast.getLookControl().lookAt(target, 30.0F, 30.0F);
+
+        if (detourTicks > 0 && detourPos != null) {
+            detourTicks--;
+            Vec3d safe = resolveSafePos(world, detourPos);
+            if (safe == null) {
+                detourTicks = 0;
+                detourPos = null;
+            } else {
+                ghast.getMoveControl().moveTo(safe.x, safe.y, safe.z, 1.15);
+                if (ghast.getEntityPos().squaredDistanceTo(safe) <= 4.0) {
+                    detourTicks = 0;
+                    detourPos = null;
+                    lastDistSq = Double.NaN;
+                    stuckTicks = 0;
+                }
+                return;
+            }
+        }
+
+        double distSq = ghast.squaredDistanceTo(target);
+        if (!Double.isNaN(lastDistSq)) {
+            if (distSq >= lastDistSq - 0.25) stuckTicks++;
+            else stuckTicks = 0;
+        }
+        lastDistSq = distSq;
+
+        if (stuckTicks >= 25) {
+            detourPos = pickDetourPos(target.getEntityPos(), 8.0);
+            detourTicks = 45;
+            stuckTicks = 0;
+            lastDistSq = Double.NaN;
+            Vec3d safe = resolveSafePos(world, detourPos);
+            if (safe != null) ghast.getMoveControl().moveTo(safe.x, safe.y, safe.z, 1.25);
+            return;
+        }
+
         Vec3d t = target.getEntityPos();
         Vec3d g = ghast.getEntityPos();
 
@@ -103,13 +157,6 @@ public class HappyGhastHuntGoal extends Goal {
 
         double distError = flatLen - DESIRED_DIST;
 
-        ghast.getLookControl().lookAt(target, 30.0F, 30.0F);
-
-        if (Math.abs(distError) <= DIST_TOLERANCE) {
-            ghast.getMoveControl().setWaiting();
-            return;
-        }
-
         Vec3d dir = flat.multiply(1.0 / flatLen);
         Vec3d desiredPos = new Vec3d(
                 t.x + dir.x * DESIRED_DIST,
@@ -117,7 +164,59 @@ public class HappyGhastHuntGoal extends Goal {
                 t.z + dir.z * DESIRED_DIST
         );
 
-        ghast.getMoveControl().moveTo(desiredPos.x, desiredPos.y, desiredPos.z, 1.0);
+        Vec3d safeDesired = resolveSafePos(world, desiredPos);
+        if (safeDesired == null) {
+            detourPos = pickDetourPos(t, 10.0);
+            detourTicks = 35;
+            Vec3d safe = resolveSafePos(world, detourPos);
+            if (safe != null) ghast.getMoveControl().moveTo(safe.x, safe.y, safe.z, 1.25);
+            return;
+        }
+
+        if (Math.abs(distError) <= DIST_TOLERANCE) {
+            ghast.getMoveControl().moveTo(safeDesired.x, safeDesired.y, safeDesired.z, 0.95);
+            return;
+        }
+
+        ghast.getMoveControl().moveTo(safeDesired.x, safeDesired.y, safeDesired.z, 1.0);
+    }
+
+    private Vec3d resolveSafePos(ServerWorld world, Vec3d desiredPos) {
+        Vec3d current = ghast.getEntityPos();
+        double dx = desiredPos.x - current.x;
+        double dy = desiredPos.y - current.y;
+        double dz = desiredPos.z - current.z;
+
+        Box base = ghast.getBoundingBox().offset(dx, dy, dz);
+        double minX = base.minX - PAYLOAD_PAD_XZ;
+        double minY = base.minY - BOAT_HANG_DOWN;
+        double minZ = base.minZ - PAYLOAD_PAD_XZ;
+        double maxX = base.maxX + PAYLOAD_PAD_XZ;
+        double maxY = base.maxY;
+        double maxZ = base.maxZ + PAYLOAD_PAD_XZ;
+
+        Box payload = new Box(minX, minY, minZ, maxX, maxY, maxZ);
+        if (world.isSpaceEmpty(ghast, payload)) return desiredPos;
+
+        for (int i = 1; i <= CLEARANCE_TRIES; i++) {
+            double up = i * CLEARANCE_STEP_Y;
+            Box raised = payload.offset(0.0, up, 0.0);
+            if (world.isSpaceEmpty(ghast, raised)) return desiredPos.add(0.0, up, 0.0);
+        }
+
+        return null;
+    }
+
+    private Vec3d pickDetourPos(Vec3d targetPos, double extraUp) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        double angle = r.nextDouble(0.0, Math.PI * 2.0);
+        double radius = DESIRED_DIST + r.nextDouble(6.0, 12.0);
+
+        double x = targetPos.x + Math.cos(angle) * radius;
+        double z = targetPos.z + Math.sin(angle) * radius;
+        double y = targetPos.y + HEIGHT_ABOVE_TARGET + extraUp + r.nextDouble(2.0, 8.0);
+
+        return new Vec3d(x, y, z);
     }
 
     private boolean isHoldingBoat() {
@@ -186,5 +285,9 @@ public class HappyGhastHuntGoal extends Goal {
     public void stop() {
         target = null;
         ghast.setTarget(null);
+        lastDistSq = Double.NaN;
+        stuckTicks = 0;
+        detourTicks = 0;
+        detourPos = null;
     }
 }

@@ -1,16 +1,20 @@
 {
   "required": true,
   "package": "jaxon.ric.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "AutoIgniteTNT",
     "DidSomeoneDie",
     "FireChargeItemMixin",
     "HappyGhastGoalsMixin",
+    "MobBurnInDaylightMixin",
     "MobEntityGoalSelectorAccessor",
+    "PlayerDisconnectMixin",
     "SkeletonHorseTrapTriggerGoalMixin",
+    "SpawnEggBabyMixin",
     "SpawnFromItemStackMixin",
-    "SpawnFromItemStackMixin$EntityAddPassengerInvoker"
+    "SpawnFromItemStackMixin$EntityAddPassengerInvoker",
+    "ZombieHorseLowCeilingGoalMixin"
   ],
   "injectors": {
     "defaultRequire": 1

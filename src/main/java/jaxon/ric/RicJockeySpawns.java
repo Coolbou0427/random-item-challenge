@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.TypedEntityData;
 import net.minecraft.entity.mob.DrownedEntity;
 import net.minecraft.entity.mob.HoglinEntity;
 import net.minecraft.entity.mob.HuskEntity;
@@ -29,6 +30,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
+
+import java.util.Optional;
 
 public final class RicJockeySpawns {
     private RicJockeySpawns() {
@@ -55,6 +58,8 @@ public final class RicJockeySpawns {
 
         saddleIfPossible(horse);
 
+        horse.addCommandTag("ric_no_burn");
+
         ZombieEntity zombie = EntityType.ZOMBIE.create(world, SpawnReason.JOCKEY);
         if (zombie == null) return;
 
@@ -62,17 +67,26 @@ public final class RicJockeySpawns {
         zombie.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SPEAR));
         stripNameTag(zombie);
 
+        zombie.addCommandTag("ric_no_burn");
+
         if (!world.spawnEntity(zombie)) return;
+
+        try {
+            horse.extinguish();
+        } catch (Throwable ignored) {
+        }
+        try {
+            zombie.extinguish();
+        } catch (Throwable ignored) {
+        }
 
         copyTeam(world, horse, zombie);
         zombie.startRiding(horse);
     }
 
+
     private static void applyCamelHuskJockey(ServerWorld world, Entity spawned) {
-        if (!(spawned instanceof CamelEntity)) {
-            if (!isEntityId(spawned, "minecraft:camel_husk")) return;
-            if (!(spawned instanceof MobEntity)) return;
-        }
+        if (!(spawned instanceof CamelEntity) && !matchesEntityId(spawned, "minecraft:camel_husk")) return;
 
         saddleIfPossible(spawned);
 
@@ -98,7 +112,7 @@ public final class RicJockeySpawns {
     }
 
     private static void applyRavagerJockey(ServerWorld world, Entity spawned) {
-        if (!isEntityId(spawned, "minecraft:ravager")) return;
+        if (!matchesEntityId(spawned, "minecraft:ravager")) return;
 
         PillagerEntity pillager = EntityType.PILLAGER.create(world, SpawnReason.JOCKEY);
         if (pillager == null) return;
@@ -114,7 +128,7 @@ public final class RicJockeySpawns {
     }
 
     private static void applyZombieNautilusJockey(ServerWorld world, Entity spawned) {
-        if (!isEntityId(spawned, "minecraft:zombie_nautilus")) return;
+        if (!matchesEntityId(spawned, "minecraft:zombie_nautilus")) return;
 
         saddleIfPossible(spawned);
 
@@ -132,10 +146,7 @@ public final class RicJockeySpawns {
     }
 
     private static void applyHoglinJockey(ServerWorld world, Entity spawned) {
-        if (!(spawned instanceof HoglinEntity)) {
-            if (!isEntityId(spawned, "minecraft:hoglin")) return;
-            if (!(spawned instanceof MobEntity)) return;
-        }
+        if (!(spawned instanceof HoglinEntity) && !matchesEntityId(spawned, "minecraft:hoglin")) return;
 
         if (spawned instanceof HoglinEntity h) {
             h.setImmuneToZombification(true);
@@ -157,7 +168,7 @@ public final class RicJockeySpawns {
     }
 
     private static void applyHappyGhastMount(ServerWorld world, Entity spawned) {
-        if (!isEntityId(spawned, "minecraft:happy_ghast")) return;
+        if (!matchesEntityId(spawned, "minecraft:happy_ghast")) return;
 
         AbstractBoatEntity boat = createBoat(world);
         if (boat == null) return;
@@ -262,26 +273,37 @@ public final class RicJockeySpawns {
     }
 
     private static MobEntity createMob(ServerWorld world, String id) {
-        EntityType<?> type = Registries.ENTITY_TYPE.get(Identifier.of(id));
+        Identifier ident = Identifier.of(id);
+        if (!Registries.ENTITY_TYPE.containsId(ident)) return null;
+        EntityType<?> type = Registries.ENTITY_TYPE.get(ident);
         Entity e = type.create(world, SpawnReason.JOCKEY);
         if (!(e instanceof MobEntity mob)) return null;
         return mob;
     }
 
-    private static boolean isEntityId(Entity entity, String id) {
+    private static boolean matchesEntityId(Entity entity, String id) {
         Identifier actual = Registries.ENTITY_TYPE.getId(entity.getType());
         return actual.toString().equals(id);
     }
 
     private static String getRicSpawnType(ItemStack stack) {
-        NbtComponent custom = stack.get(DataComponentTypes.CUSTOM_DATA);
-        if (custom == null || custom.isEmpty()) return null;
+        NbtCompound nbt = null;
 
-        NbtCompound nbt = custom.copyNbt();
+        NbtComponent custom = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (custom != null && !custom.isEmpty()) {
+            nbt = custom.copyNbt();
+        } else {
+            TypedEntityData<EntityType<?>> entityData = stack.get(DataComponentTypes.ENTITY_DATA);
+            if (entityData != null) {
+                nbt = entityData.copyNbtWithoutId();
+            }
+        }
+
+        if (nbt == null) return null;
         if (!nbt.contains("ric_spawn")) return null;
 
-        String v = nbt.getString("ric_spawn").orElse("");
-        return v.isEmpty() ? null : v;
+        Optional<String> v = nbt.getString("ric_spawn");
+        return v.filter(s -> !s.isEmpty()).orElse(null);
     }
 
     private static void stripNameTag(Entity e) {

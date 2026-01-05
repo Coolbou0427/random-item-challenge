@@ -92,7 +92,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:trident[minecraft:enchantments={\"minecraft:loyalty\":5}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:breach\":4}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:density\":5}] 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:wind_burst\":3}] 1", "netherite_boots[minecraft:enchantments={\"minecraft:feather_falling\":4},damage=481] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:wind_burst\":3}] 1", "minecraft:netherite_boots[minecraft:enchantments={\\\"minecraft:feather_falling\\\":4},minecraft:attribute_modifiers=[{id:\\\"a\\\",type:\\\"armor\\\",amount:-3,operation:\\\"add_value\\\",slot:\\\"feet\\\"},{id:\\\"t\\\",type:\\\"armor_toughness\\\",amount:-3,operation:\\\"add_value\\\",slot:\\\"feet\\\"},{id:\\\"k\\\",type:\\\"knockback_resistance\\\",amount:-0.1,operation:\\\"add_value\\\",slot:\\\"feet\\\"}]] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("netherite_spear[minecraft:enchantments={\"minecraft:lunge\":10}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bow 1", "arrow 8"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bow 1", "spectral_arrow 8"), 10));
@@ -119,7 +119,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("evoker_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("ghast_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("hoglin_spawn_egg 10"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("horse_spawn_egg 1", "saddle 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("horse_spawn_egg[entity_data={id:horse,Tame:1}] 1", "saddle 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("phantom_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("piglin_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("piglin_brute_spawn_egg 1"), 10));
@@ -221,7 +221,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("barrier 8"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("reinforced_deepslate 8"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("end_portal_frame 12", "ender_eye 12"), 5));
-        defaultItems.add(new WeightedItem(Arrays.asList("obsidian 14", "flint_and_steel[damage=62] 2"), 5));
+        defaultItems.add(new WeightedItem(Arrays.asList("obsidian 14", "flint_and_steel[damage=62] 1"), 5));
         defaultItems.add(new WeightedItem(Arrays.asList("enchanting_table 1", "lapis_lazuli 64", "experience_bottle 32"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("anvil 1", "experience_bottle 32", "enchanted_book[minecraft:stored_enchantments={\"minecraft:sharpness\":2}] 1"), 2));
         defaultItems.add(new WeightedItem(Arrays.asList("anvil 1", "experience_bottle 32", "enchanted_book[minecraft:stored_enchantments={\"minecraft:sharpness\":3}] 1"), 2));
@@ -248,8 +248,8 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("elytra[damage=422] 1", "firework_rocket 2"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("golden_apple 2"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("enchanted_golden_apple 1"), 3));
-        defaultItems.add(new WeightedItem(Arrays.asList("end_crystal 1", "obsidian 1", "netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},damage=565] 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("respawn_anchor 1", "glowstone 1", "netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},damage=575] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("end_crystal 1","obsidian 1","minecraft:netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},minecraft:attribute_modifiers=[{id:\"a\",type:\"armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"t\",type:\"armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"k\",type:\"knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
+        defaultItems.add(new WeightedItem(Arrays.asList("respawn_anchor 1","glowstone 1","minecraft:netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},minecraft:attribute_modifiers=[{id:\"a\",type:\"armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"t\",type:\"armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"k\",type:\"knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
         defaultItems.add(new WeightedItem(Arrays.asList("water_bucket 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:hay_block 5"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("ladder 64"), 10));
@@ -308,12 +308,10 @@ public class Items {
     public static void dayChanceAndRainChance() {
         Random random = SafeRandom.getUniqueRandom();
 
-        // Set a random time from our list
         List<Integer> times = Arrays.asList(1000, 6000, 13000);
         int tickValue = times.get(random.nextInt(times.size()));
         Objects.requireNonNull(Random_Item_Challenge.server.getWorld(World.OVERWORLD)).setTimeOfDay(tickValue);
 
-        // Weather odds: for example, 10% rain, 80% clear, 10% thunder
         Map<String, Integer> weatherOdds = Map.of(
                 "rain", 10,
                 "clear", 85,

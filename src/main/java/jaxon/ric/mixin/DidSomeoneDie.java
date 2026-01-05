@@ -2,6 +2,7 @@ package jaxon.ric.mixin;
 
 import jaxon.ric.Gamerz;
 import jaxon.ric.Winner;
+import jaxon.ric.Random_Item_Challenge;
 import jaxon.ric.command.GoCommand;
 import jaxon.ric.command.TeamsCommand;
 import net.minecraft.entity.damage.DamageSource;
@@ -38,6 +39,8 @@ public abstract class DidSomeoneDie {
         }
         if (gamerToRemove == null) return;
 
+        if (GoCommand.testMode) return;
+
         if (GoCommand.teamMode && TeamsCommand.teams != null) {
             TeamsCommand.teamsWithoutRemovals = new HashMap<>(TeamsCommand.teams);
             ArrayList<String> keys = new ArrayList<>(TeamsCommand.teams.keySet());
@@ -50,11 +53,13 @@ public abstract class DidSomeoneDie {
                     }
                 }
             }
+            Random_Item_Challenge.participantsWhoDied.add(gamerToRemove.uuid);
             Gamerz.gamersList.remove(gamerToRemove);
             if (TeamsCommand.teams.size() == 1) {
                 Winner.Declare();
             }
         } else {
+            Random_Item_Challenge.participantsWhoDied.add(gamerToRemove.uuid);
             Gamerz.gamersList.remove(gamerToRemove);
             if (Gamerz.gamersList.size() == 1) {
                 Winner.Declare();

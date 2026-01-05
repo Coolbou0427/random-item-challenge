@@ -2,18 +2,31 @@ package jaxon.ric;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-import jaxon.ric.Random_Item_Challenge.SafeRandom;
+import java.util.UUID;
 
-public class WeightedItem {
-    private List<String> items;
-    private int weight;
+public record WeightedItem(List<String> items, int weight) {
 
-    public WeightedItem(List<String> items, int weight) {
-        this.items = items;
-        this.weight = weight;
+    public static WeightedItem selectRandom(List<WeightedItem> items, UUID gamerUuid) {
+        try {
+            Random random = Random_Item_Challenge.SafeRandom.getUniqueRandom();
+            int totalWeight = items.stream().mapToInt(WeightedItem::weight).sum();
+            if (items.isEmpty() || totalWeight <= 0) {
+                Gamerz.fillOrRefillItemsList(gamerUuid);
+                return null;
+            }
+            int index = random.nextInt(totalWeight);
+            int sum = 0;
+            for (WeightedItem item : items) {
+                sum += item.weight();
+                if (index < sum) {
+                    return item;
+                }
+            }
+        } catch (Exception e) {
+            Random_Item_Challenge.LOGGER.error("Error in selectRandom: {}", e.getMessage());
+        }
+        return null;
     }
-
     public List<String> getItems() {
         return items;
     }
@@ -22,25 +35,4 @@ public class WeightedItem {
         return weight;
     }
 
-    public static WeightedItem selectRandom(List<WeightedItem> items, String gamer) {
-        try {
-            Random random = SafeRandom.getUniqueRandom();
-            int totalWeight = items.stream().mapToInt(WeightedItem::getWeight).sum();
-            if (items.isEmpty() || totalWeight <= 0) {
-                Gamerz.fillOrRefillItemsList(gamer);
-                return null;
-            }
-            int index = random.nextInt(totalWeight);
-            int sum = 0;
-            for (WeightedItem item : items) {
-                sum += item.getWeight();
-                if (index < sum) {
-                    return item;
-                }
-            }
-        } catch (Exception e) {
-            Random_Item_Challenge.LOGGER.error("Error in selectRandom: " + e.getMessage());
-        }
-        return null;
-    }
 }
