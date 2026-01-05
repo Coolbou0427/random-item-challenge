@@ -1,6 +1,5 @@
 package jaxon.ric.mixin;
 
-import jaxon.ric.hooks.SpawnEggHooks;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.EntityType;
