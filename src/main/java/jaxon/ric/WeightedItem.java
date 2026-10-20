@@ -1,29 +1,38 @@
 package jaxon.ric;
 
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.Objects;
+import java.util.random.RandomGenerator;
 
-public record WeightedItem(List<String> items, int weight) {
+public record WeightedItem(List<String> items, int weight, String categoryOverride) {
 
-    public static WeightedItem selectRandom(List<WeightedItem> items, UUID gamerUuid) {
-        try {
-            Random random = Random_Item_Challenge.SafeRandom.getUniqueRandom();
-            int totalWeight = items.stream().mapToInt(WeightedItem::weight).sum();
-            if (items.isEmpty() || totalWeight <= 0) {
-                Gamerz.fillOrRefillItemsList(gamerUuid);
-                return null;
-            }
-            int index = random.nextInt(totalWeight);
-            int sum = 0;
-            for (WeightedItem item : items) {
-                sum += item.weight();
-                if (index < sum) {
-                    return item;
-                }
-            }
-        } catch (Exception e) {
-            Random_Item_Challenge.LOGGER.error("Error in selectRandom: {}", e.getMessage());
+    public WeightedItem(List<String> items, int weight) {
+        this(items, weight, null);
+    }
+
+    public WeightedItem {
+        items = items == null ? List.of() : List.copyOf(items);
+    }
+
+    public static WeightedItem selectRandom(List<WeightedItem> items) {
+        return selectRandom(items, java.util.concurrent.ThreadLocalRandom.current());
+    }
+
+    static WeightedItem selectRandom(List<WeightedItem> items, RandomGenerator random) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(random, "random");
+
+        long totalWeight = 0;
+        for (WeightedItem item : items) {
+            if (item.weight() > 0) totalWeight += item.weight();
+        }
+        if (totalWeight <= 0) return null;
+
+        long selectedWeight = random.nextLong(totalWeight);
+        for (WeightedItem item : items) {
+            if (item.weight() <= 0) continue;
+            selectedWeight -= item.weight();
+            if (selectedWeight < 0) return item;
         }
         return null;
     }

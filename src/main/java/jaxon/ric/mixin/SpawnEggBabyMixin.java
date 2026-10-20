@@ -1,12 +1,13 @@
 package jaxon.ric.mixin;
 
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.item.SpawnEggItem;
+import jaxon.ric.SpawnEggHooks;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,17 +18,17 @@ import java.util.Optional;
 @Mixin(SpawnEggItem.class)
 public class SpawnEggBabyMixin {
 
-    @Inject(method = "spawnBaby", at = @At("RETURN"))
-    private void ric$afterSpawnBaby(
-            PlayerEntity user,
-            MobEntity entity,
-            EntityType<? extends MobEntity> entityType,
-            ServerWorld world,
-            Vec3d pos,
+    @Inject(method = "spawnOffspringFromSpawnEgg", at = @At("RETURN"))
+    private static void ric$afterSpawnBaby(
+            Player user,
+            Mob entity,
+            EntityType<? extends Mob> entityType,
+            ServerLevel world,
+            Vec3 pos,
             ItemStack stack,
-            CallbackInfoReturnable<Optional<MobEntity>> cir
+            CallbackInfoReturnable<Optional<Mob>> cir
     ) {
-        Optional<MobEntity> babyOpt = cir.getReturnValue();
+        Optional<Mob> babyOpt = cir.getReturnValue();
         if (babyOpt == null || babyOpt.isEmpty()) return;
 
         SpawnEggHooks.onSpawnedBySpawnEgg(world, stack, user, babyOpt.get());

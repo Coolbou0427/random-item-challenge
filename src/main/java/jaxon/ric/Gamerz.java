@@ -1,12 +1,12 @@
 package jaxon.ric;
 
-import net.minecraft.server.network.ServerPlayerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import net.minecraft.server.level.ServerPlayer;
 
 public class Gamerz {
     private static final Logger LOGGER = LoggerFactory.getLogger(Gamerz.class);
@@ -18,10 +18,10 @@ public class Gamerz {
     public final UUID uuid;
     public final String name;
 
-    public Gamerz(ServerPlayerEntity player) {
-        this.uuid = player.getUuid();
+    public Gamerz(ServerPlayer player) {
+        this.uuid = player.getUUID();
         this.name = player.getName().getString();
-        fillOrRefillItemsList(this.uuid);
+        refillItems();
         gamersList.add(this);
     }
 
@@ -33,13 +33,8 @@ public class Gamerz {
     }
 
     public WeightedItem getItem() {
-        if (playerItemsList.isEmpty()) fillOrRefillItemsList(uuid);
-        WeightedItem wi = WeightedItem.selectRandom(playerItemsList, uuid);
-        if (wi == null) {
-            fillOrRefillItemsList(uuid);
-            wi = WeightedItem.selectRandom(playerItemsList, uuid);
-        }
-        return wi;
+        if (playerItemsList.isEmpty()) refillItems();
+        return WeightedItem.selectRandom(playerItemsList);
     }
 
     public List<WeightedItem> getItems() {
@@ -51,13 +46,10 @@ public class Gamerz {
         playerItemsList.remove(item);
     }
 
-    public static void fillOrRefillItemsList(UUID gamerUuid) {
-        Gamerz gamer = findByUuid(gamerUuid);
-        if (gamer == null) return;
-
-        gamer.playerItemsList.clear();
+    public void refillItems() {
+        playerItemsList.clear();
         if (Items.itemsAndNumbers != null && !Items.itemsAndNumbers.isEmpty()) {
-            gamer.playerItemsList.addAll(Items.itemsAndNumbers);
+            playerItemsList.addAll(Items.itemsAndNumbers);
         } else {
             LOGGER.warn("Items.itemsAndNumbers was empty when refilling items list");
         }
@@ -71,14 +63,14 @@ public class Gamerz {
     }
 
     public static void setHunger(Gamerz gamer, int hungerLevelToSet) {
-        ServerPlayerEntity gamerObj = Random_Item_Challenge.getPlayerByUuid(gamer.uuid);
+        ServerPlayer gamerObj = Random_Item_Challenge.getPlayerByUuid(gamer.uuid);
         if (gamerObj == null) return;
-        gamerObj.getHungerManager().setFoodLevel(hungerLevelToSet);
-        gamerObj.getHungerManager().setSaturationLevel(20.0f);
+        gamerObj.getFoodData().setFoodLevel(hungerLevelToSet);
+        gamerObj.getFoodData().setSaturation(20.0f);
     }
 
     public static void setHealth(Gamerz gamer, float healthLevelToSet) {
-        ServerPlayerEntity gamerObj = Random_Item_Challenge.getPlayerByUuid(gamer.uuid);
+        ServerPlayer gamerObj = Random_Item_Challenge.getPlayerByUuid(gamer.uuid);
         if (gamerObj != null) gamerObj.setHealth(healthLevelToSet);
     }
 }

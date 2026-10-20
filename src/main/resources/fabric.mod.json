@@ -19,12 +19,16 @@
 		]
 	},
 	"mixins": [
-		"random_item_challenge.mixins.json"
+		"random_item_challenge.mixins.json",
+		{
+			"config": "random_item_challenge.client.mixins.json",
+			"environment": "client"
+		}
 	],
 	"depends": {
-		"fabricloader": ">=0.18.4",
-		"minecraft": "~1.21.11",
-		"java": ">=21",
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
 		"fabric-api": "*"
 	},
 	"suggests": {

@@ -17,7 +17,6 @@ public class StartGameCommands {
             "execute in minecraft:overworld run worldborder set 30 3600",
             "execute in minecraft:the_nether run worldborder set 30 3600",
             "execute in minecraft:the_end run worldborder set 30 3600",
-            "kill @e[type=!player,type=!villager,type=!cow,type=!sheep,type=!chicken,type=!goat,type=!dolphin,type=!allay,type=!ender_dragon,type=!end_crystal,type=!armadillo]",
             "clear @a",
             "effect clear @a",
             "item replace entity @a hotbar.7 with cooked_beef 64",

@@ -1,37 +1,36 @@
 package jaxon.ric.ai;
 
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.EnumSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 
 public class ZombieHorseAvoidLowCeilingGoal extends Goal {
-    private final MobEntity horse;
+    private final Mob horse;
     private final double speed;
     private final int searchRadius;
     private final int requiredAirBlocks;
     private BlockPos targetPos;
     private int cooldown;
 
-    public ZombieHorseAvoidLowCeilingGoal(MobEntity horse, double speed, int searchRadius, int requiredAirBlocks) {
+    public ZombieHorseAvoidLowCeilingGoal(Mob horse, double speed, int searchRadius, int requiredAirBlocks) {
         this.horse = horse;
         this.speed = speed;
         this.searchRadius = searchRadius;
         this.requiredAirBlocks = requiredAirBlocks;
-        this.setControls(EnumSet.of(Control.MOVE));
+        this.setFlags(EnumSet.of(Flag.MOVE));
     }
 
     @Override
-    public boolean canStart() {
+    public boolean canUse() {
         if (cooldown > 0) {
             cooldown--;
             return false;
         }
-        if (!(horse.getEntityWorld() instanceof ServerWorld)) return false;
-        if (!horse.hasPassengers()) return false;
+        if (!(horse.level() instanceof ServerLevel)) return false;
+        if (!horse.isVehicle()) return false;
         if (hasEnoughHeadroom()) return false;
 
         targetPos = findNearestSafePos();
@@ -44,13 +43,13 @@ public class ZombieHorseAvoidLowCeilingGoal extends Goal {
     }
 
     @Override
-    public boolean shouldContinue() {
+    public boolean canContinueToUse() {
         if (targetPos == null) return false;
-        if (!horse.hasPassengers()) return false;
+        if (!horse.isVehicle()) return false;
         if (hasEnoughHeadroom()) return false;
 
-        EntityNavigation nav = horse.getNavigation();
-        if (nav.isIdle()) return false;
+        PathNavigation nav = horse.getNavigation();
+        if (nav.isDone()) return false;
 
         double dx = (targetPos.getX() + 0.5) - horse.getX();
         double dy = (targetPos.getY()) - horse.getY();
@@ -61,7 +60,7 @@ public class ZombieHorseAvoidLowCeilingGoal extends Goal {
     @Override
     public void start() {
         if (targetPos == null) return;
-        horse.getNavigation().startMovingTo(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, speed);
+        horse.getNavigation().moveTo(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, speed);
     }
 
     @Override
@@ -71,19 +70,19 @@ public class ZombieHorseAvoidLowCeilingGoal extends Goal {
     }
 
     private boolean hasEnoughHeadroom() {
-        if (!(horse.getEntityWorld() instanceof ServerWorld world)) return true;
-        BlockPos base = horse.getBlockPos();
+        if (!(horse.level() instanceof ServerLevel world)) return true;
+        BlockPos base = horse.blockPosition();
         for (int i = 1; i <= requiredAirBlocks; i++) {
-            if (!world.getBlockState(base.up(i)).isAir()) return false;
+            if (!world.getBlockState(base.above(i)).isAir()) return false;
         }
         return true;
     }
 
     private BlockPos findNearestSafePos() {
-        if (!(horse.getEntityWorld() instanceof ServerWorld world)) return null;
+        if (!(horse.level() instanceof ServerLevel world)) return null;
 
-        BlockPos origin = horse.getBlockPos();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos origin = horse.blockPosition();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
 
         int ox = origin.getX();
         int oy = origin.getY();
@@ -106,7 +105,7 @@ public class ZombieHorseAvoidLowCeilingGoal extends Goal {
                     double distSq = squaredDistToCenter(m);
                     if (distSq < bestDistSq) {
                         bestDistSq = distSq;
-                        best = m.toImmutable();
+                        best = m.immutable();
                     }
                 }
             }
@@ -115,18 +114,16 @@ public class ZombieHorseAvoidLowCeilingGoal extends Goal {
         return best;
     }
 
-    private boolean isSafeSpot(ServerWorld world, BlockPos pos) {
+    private boolean isSafeSpot(ServerLevel world, BlockPos pos) {
         if (!world.getBlockState(pos).isAir()) return false;
 
         for (int i = 1; i <= requiredAirBlocks; i++) {
-            if (!world.getBlockState(pos.up(i)).isAir()) return false;
+            if (!world.getBlockState(pos.above(i)).isAir()) return false;
         }
 
-        BlockPos below = pos.down();
+        BlockPos below = pos.below();
         if (world.getBlockState(below).isAir()) return false;
-        if (!world.getBlockState(below).isSolidBlock(world, below)) return false;
-
-        return true;
+        return world.getBlockState(below).isRedstoneConductor(world, below);
     }
 
     private double squaredDistToCenter(BlockPos pos) {

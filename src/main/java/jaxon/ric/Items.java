@@ -2,8 +2,7 @@ package jaxon.ric;
 
 import java.util.*;
 
-import jaxon.ric.Random_Item_Challenge.SafeRandom;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 
 @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
 public class Items {
@@ -13,7 +12,7 @@ public class Items {
         Items.itemsAndNumbers = configManager.items;
     }
 
-    static List<WeightedItem> getDefaultItems() {
+    public static List<WeightedItem> getDefaultItems() {
         List<WeightedItem> defaultItems = new ArrayList<>();
         defaultItems.add(new WeightedItem(Arrays.asList("wooden_sword 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("wooden_shovel 1"), 10));
@@ -55,7 +54,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("crossbow 9", "arrow 9"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("shield 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("fishing_rod 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("snow_block 64", "minecraft:netherite_shovel[minecraft:enchantments={\"minecraft:efficiency\":2},minecraft:attribute_modifiers=[{id:\"ric:no_damage\",type:\"minecraft:attack_damage\",amount:-100,operation:\"add_value\",slot:\"mainhand\"}]] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("snow_block 64", "minecraft:netherite_shovel[minecraft:enchantments={\"minecraft:efficiency\":2},minecraft:attribute_modifiers=[{id:\"ric:no_damage\",type:\"minecraft:attack_damage\",amount:-1,operation:\"add_value\",slot:\"mainhand\",display:{type:\"override\",value:{text:\"+0 Attack Damage\",color:\"green\"}}},{id:\"ric:attack_speed\",type:\"minecraft:attack_speed\",amount:-3,operation:\"add_value\",slot:\"mainhand\",display:{type:\"override\",value:{text:\"+1 Attack Speed\",color:\"green\"}}}]] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("mace 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("leather_helmet 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("leather_chestplate 1"), 10));
@@ -92,7 +91,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:trident[minecraft:enchantments={\"minecraft:loyalty\":5}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:breach\":4}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:density\":5}] 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:wind_burst\":3}] 1", "minecraft:netherite_boots[minecraft:enchantments={\\\"minecraft:feather_falling\\\":4},minecraft:attribute_modifiers=[{id:\\\"a\\\",type:\\\"armor\\\",amount:-3,operation:\\\"add_value\\\",slot:\\\"feet\\\"},{id:\\\"t\\\",type:\\\"armor_toughness\\\",amount:-3,operation:\\\"add_value\\\",slot:\\\"feet\\\"},{id:\\\"k\\\",type:\\\"knockback_resistance\\\",amount:-0.1,operation:\\\"add_value\\\",slot:\\\"feet\\\"}]] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("minecraft:mace[minecraft:enchantments={\"minecraft:wind_burst\":3}] 1", "minecraft:netherite_boots[minecraft:enchantments={\"minecraft:feather_falling\":4},minecraft:tooltip_display={hidden_components:[\"minecraft:attribute_modifiers\"]},minecraft:custom_name={text:\"Feather Falling Boots\",italic:false},minecraft:lore=[{text:\"\",italic:false},{text:\"Breaks after blocking one explosion.\",color:\"gold\",italic:false},{text:\"When worn:\",color:\"gray\",italic:false},{text:\"Provides no normal armor protection.\",color:\"red\",italic:false}],minecraft:attribute_modifiers=[{id:\"ric:zero_armor\",type:\"minecraft:armor\",amount:-3,operation:\"add_value\",slot:\"feet\"},{id:\"ric:zero_armor_toughness\",type:\"minecraft:armor_toughness\",amount:-3,operation:\"add_value\",slot:\"feet\"},{id:\"ric:zero_knockback_resistance\",type:\"minecraft:knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"feet\"}]] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("netherite_spear[minecraft:enchantments={\"minecraft:lunge\":10}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bow 1", "arrow 8"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bow 1", "spectral_arrow 8"), 10));
@@ -110,13 +109,14 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("warped_hyphae 4"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("crimson_hyphae 4"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("mangrove_wood 4"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("cherry_wood 4"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bamboo_planks 16"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bamboo_block 16"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("cherry_wood 32"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("blaze_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("cave_spider_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("creeper_spawn_egg 10"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("evoker_spawn_egg 10"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("creaking_spawn_egg 10"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("evoker_spawn_egg 2"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("ghast_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("hoglin_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("horse_spawn_egg[entity_data={id:horse,Tame:1}] 1", "saddle 1"), 10));
@@ -126,6 +126,7 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("pillager_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("shulker_spawn_egg 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("skeleton_spawn_egg 5"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("skeleton_horse_spawn_egg[entity_data={id:\"minecraft:skeleton_horse\",SkeletonTrap:1b},minecraft:custom_name={text:\"Skeleton Horsemen Trap\",italic:false}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("stray_spawn_egg 5"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("bogged_spawn_egg 5"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("parched_spawn_egg 5"), 10));
@@ -144,13 +145,14 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("bee_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("enderman_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("spider_spawn_egg 10"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("iron_golem_spawn_egg 10"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("iron_golem_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("zombie_horse_spawn_egg[minecraft:custom_data={ric_spawn:\"zombie_horseman\"},minecraft:custom_name={text:\"Zombie Horseman Jockey Spawn Egg\",italic:false}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("camel_husk_spawn_egg[minecraft:custom_data={ric_spawn:\"camel_husk_jockey\"},minecraft:custom_name={text:\"Camel Husk Jockey Spawn Egg\",italic:false}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("ravager_spawn_egg[minecraft:custom_data={ric_spawn:\"ravager_jockey\"},minecraft:custom_name={text:\"Ravager Jockey Spawn Egg\",italic:false}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("zombie_nautilus_spawn_egg[minecraft:custom_data={ric_spawn:\"zombie_nautilus_jockey\"},minecraft:custom_name={text:\"Zombie Nautilus Jockey Spawn Egg\",italic:false}] 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("hoglin_spawn_egg[minecraft:custom_data={ric_spawn:\"hoglin_jockey\"},minecraft:custom_name={text:\"Hoglin Jockey Spawn Egg\",italic:false}] 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("happy_ghast_spawn_egg[minecraft:custom_data={ric_spawn:\"happy_ghast_mount\"},minecraft:custom_name={text:\"Happy Ghast Mount Spawn Egg\",italic:false}] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("happy_ghast_spawn_egg[minecraft:custom_data={ric_spawn:\"happy_ghast_mount\"},minecraft:custom_name={text:\"Happy Ghast Jockey Spawn Egg\",italic:false}] 1"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("sulfur_cube_spawn_egg 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("cobblestone 16"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("blackstone 16"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("black_glazed_terracotta 16"), 2));
@@ -193,7 +195,6 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("slime_block 64"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("honey_block 64"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("lily_pad 64"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("bamboo_fence 64"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("soul_sand 16"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("magma_block 16"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("potion[minecraft:potion_contents={potion:\"minecraft:regeneration\"}] 1"), 10));
@@ -248,8 +249,8 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("elytra[damage=422] 1", "firework_rocket 2"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("golden_apple 2"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("enchanted_golden_apple 1"), 3));
-        defaultItems.add(new WeightedItem(Arrays.asList("end_crystal 1","obsidian 1","minecraft:netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},minecraft:attribute_modifiers=[{id:\"a\",type:\"armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"t\",type:\"armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"k\",type:\"knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
-        defaultItems.add(new WeightedItem(Arrays.asList("respawn_anchor 1","glowstone 1","minecraft:netherite_chestplate[minecraft:enchantments={\"minecraft:blast_protection\":255},minecraft:attribute_modifiers=[{id:\"a\",type:\"armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"t\",type:\"armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"k\",type:\"knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
+        defaultItems.add(new WeightedItem(Arrays.asList("end_crystal 1","obsidian 1","minecraft:netherite_chestplate[minecraft:custom_data={ric_blast_armor:1b},minecraft:rarity=\"rare\",minecraft:enchantment_glint_override=true,minecraft:tooltip_display={hidden_components:[\"minecraft:attribute_modifiers\"]},minecraft:custom_name={text:\"Blast Chestplate\",color:\"aqua\",italic:false},minecraft:lore=[{text:\"Blast Protection 999,999,999\",color:\"gray\",italic:false},{text:\"\",italic:false},{text:\"Breaks after blocking one explosion.\",color:\"gold\",italic:false},{text:\"When worn:\",color:\"gray\",italic:false},{text:\"Provides no normal armor protection.\",color:\"red\",italic:false}],minecraft:attribute_modifiers=[{id:\"ric:zero_armor\",type:\"minecraft:armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"ric:zero_armor_toughness\",type:\"minecraft:armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"ric:zero_knockback_resistance\",type:\"minecraft:knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
+        defaultItems.add(new WeightedItem(Arrays.asList("respawn_anchor 1","glowstone 1","minecraft:netherite_chestplate[minecraft:custom_data={ric_blast_armor:1b},minecraft:rarity=\"rare\",minecraft:enchantment_glint_override=true,minecraft:tooltip_display={hidden_components:[\"minecraft:attribute_modifiers\"]},minecraft:custom_name={text:\"Blast Chestplate\",color:\"aqua\",italic:false},minecraft:lore=[{text:\"Blast Protection 999,999,999\",color:\"gray\",italic:false},{text:\"\",italic:false},{text:\"Breaks after blocking one explosion.\",color:\"gold\",italic:false},{text:\"When worn:\",color:\"gray\",italic:false},{text:\"Provides no normal armor protection.\",color:\"red\",italic:false}],minecraft:attribute_modifiers=[{id:\"ric:zero_armor\",type:\"minecraft:armor\",amount:-8,operation:\"add_value\",slot:\"chest\"},{id:\"ric:zero_armor_toughness\",type:\"minecraft:armor_toughness\",amount:-3,operation:\"add_value\",slot:\"chest\"},{id:\"ric:zero_knockback_resistance\",type:\"minecraft:knockback_resistance\",amount:-0.1,operation:\"add_value\",slot:\"chest\"}]] 1"),10));
         defaultItems.add(new WeightedItem(Arrays.asList("water_bucket 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("minecraft:hay_block 5"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("ladder 64"), 10));
@@ -290,27 +291,127 @@ public class Items {
         defaultItems.add(new WeightedItem(Arrays.asList("pig_spawn_egg 1", "saddle 1", "carrot_on_a_stick 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("camel_husk_spawn_egg 1", "saddle 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("camel_spawn_egg 1", "saddle 1"), 10));
-        defaultItems.add(new WeightedItem(Arrays.asList("nautilus_spawn_egg 1", "saddle 1", "pufferfish 5"), 10));
+        defaultItems.add(new WeightedItem(Arrays.asList("nautilus_spawn_egg 1", "saddle 1", "pufferfish 10"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("zombie_nautilus_spawn_egg 1", "saddle 1", "pufferfish 5"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("strider_spawn_egg 1", "saddle 1", "warped_fungus_on_a_stick 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("rotten_flesh 576"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("vault[minecraft:block_state={ominous:\"true\"},minecraft:block_entity_data={id:\"minecraft:vault\",config:{key_item:{count:1,id:\"minecraft:ominous_trial_key\"},loot_table:\"minecraft:chests/trial_chambers/reward_ominous\"}}] 1", "ominous_trial_key 1"), 10));
         defaultItems.add(new WeightedItem(Arrays.asList("wolf_spawn_egg 1", "wolf_armor 1", "bone 12"), 10));
+        sortMatchingDefaults(defaultItems, Items::isDefaultToolDrop, Comparator.comparingInt(Items::defaultToolOrder));
+        sortMatchingDefaults(defaultItems, Items::isDefaultArmorDrop, Comparator.comparingInt(Items::defaultArmorOrder));
         return defaultItems;
+    }
+
+    private static void sortMatchingDefaults(List<WeightedItem> drops,
+                                             java.util.function.Predicate<WeightedItem> matches,
+                                             Comparator<WeightedItem> comparator) {
+        List<Integer> slots = new ArrayList<>();
+        List<WeightedItem> matching = new ArrayList<>();
+        for (int index = 0; index < drops.size(); index++) {
+            WeightedItem drop = drops.get(index);
+            if (matches.test(drop)) {
+                slots.add(index);
+                matching.add(drop);
+            }
+        }
+        matching.sort(comparator);
+        for (int index = 0; index < slots.size(); index++) drops.set(slots.get(index), matching.get(index));
+    }
+
+    private static boolean isDefaultToolDrop(WeightedItem drop) {
+        if (hasDefaultSpawnEgg(drop)) return false;
+        return drop.items().stream().filter(Objects::nonNull).map(Items::defaultItemId)
+                .anyMatch(id -> id.matches("(wooden|stone|golden|copper|iron|diamond|netherite)_(sword|pickaxe|axe|shovel|hoe|spear)")
+                        || Set.of("trident", "mace", "bow", "crossbow", "fishing_rod", "flint_and_steel",
+                        "shears", "brush", "carrot_on_a_stick", "warped_fungus_on_a_stick").contains(id));
+    }
+
+    private static int defaultToolOrder(WeightedItem drop) {
+        int best = 1_000;
+        for (String raw : drop.items()) {
+            String id = defaultItemId(raw);
+            java.util.regex.Matcher match = java.util.regex.Pattern
+                    .compile("(wooden|stone|golden|copper|iron|diamond|netherite)_(sword|pickaxe|axe|shovel|hoe|spear)")
+                    .matcher(id);
+            if (!match.matches()) continue;
+            int material = switch (match.group(1)) {
+                case "wooden" -> 0; case "stone" -> 1; case "golden" -> 2; case "copper" -> 3;
+                case "iron" -> 4; case "diamond" -> 5; default -> 6;
+            };
+            int type = switch (match.group(2)) {
+                case "sword" -> 0; case "pickaxe" -> 1; case "axe" -> 2; case "shovel" -> 3;
+                case "hoe" -> 4; default -> 5;
+            };
+            best = Math.min(best, material * 10 + type);
+        }
+        return best;
+    }
+
+    private static boolean isDefaultArmorDrop(WeightedItem drop) {
+        if (hasDefaultSpawnEgg(drop) || isDefaultToolDrop(drop)) return false;
+        return drop.items().stream().filter(Objects::nonNull).map(Items::defaultItemId)
+                .anyMatch(id -> id.endsWith("_helmet") || id.endsWith("_chestplate") || id.endsWith("_leggings")
+                        || id.endsWith("_boots") || Set.of("elytra", "wolf_armor", "shield").contains(id));
+    }
+
+    private static int defaultArmorOrder(WeightedItem drop) {
+        List<String> ids = drop.items().stream().filter(Objects::nonNull).map(Items::defaultItemId).toList();
+        boolean blastArmor = drop.items().stream().filter(Objects::nonNull)
+                .anyMatch(raw -> raw.contains("ric_blast_armor"));
+        if (blastArmor && ids.contains("end_crystal")) return 15;
+        if (blastArmor && ids.contains("respawn_anchor")) return 35;
+
+        int best = 10_000;
+        for (String raw : drop.items()) {
+            if (raw.contains("soul_speed")) return 55;
+            String id = defaultItemId(raw);
+            java.util.regex.Matcher match = java.util.regex.Pattern
+                    .compile("(leather|chainmail|iron|copper|golden|diamond|netherite)_(helmet|chestplate|leggings|boots)")
+                    .matcher(id);
+            if (match.matches()) {
+                int material = switch (match.group(1)) {
+                    case "leather" -> 0; case "chainmail" -> 1; case "iron" -> 2; case "copper" -> 3;
+                    case "golden" -> 4; case "diamond" -> 5; default -> 6;
+                };
+                int piece = switch (match.group(2)) {
+                    case "helmet" -> 0; case "chestplate" -> 1; case "leggings" -> 2; default -> 3;
+                };
+                best = Math.min(best, (raw.contains("[") ? 2_000 : 0) + material * 10 + piece);
+            } else if (id.equals("turtle_helmet")) best = Math.min(best, 1_000);
+            else if (id.equals("elytra")) best = Math.min(best, 3_000);
+            else if (id.equals("wolf_armor")) best = Math.min(best, 3_100);
+            else if (id.equals("shield")) best = Math.min(best, 4_000);
+        }
+        return best;
+    }
+
+    private static String defaultItemId(String raw) {
+        String value = raw.trim();
+        int space = value.lastIndexOf(' ');
+        if (space > 0) value = value.substring(0, space);
+        int components = value.indexOf('[');
+        if (components >= 0) value = value.substring(0, components);
+        int namespace = value.indexOf(':');
+        return namespace >= 0 ? value.substring(namespace + 1) : value;
+    }
+
+    private static boolean hasDefaultSpawnEgg(WeightedItem drop) {
+        return drop.items().stream().filter(Objects::nonNull).map(Items::defaultItemId)
+                .anyMatch(id -> id.endsWith("_spawn_egg"));
     }
 
 
     public static final Map<String, List<String>> randomItems = new HashMap<>();
 
     static {
-        randomItems.put("jukebox 1", Arrays.asList("music_disc_pigstep", "music_disc_stal", "music_disc_otherside", "music_disc_relic", "music_disc_5", "music_disc_creator"));
+        randomItems.put("jukebox 1", Arrays.asList("music_disc_pigstep", "music_disc_stal", "music_disc_otherside", "music_disc_relic", "music_disc_5", "music_disc_creator", "music_disc_lava_chicken", "music_disc_bounce"));
     }
     public static void dayChanceAndRainChance() {
-        Random random = SafeRandom.getUniqueRandom();
+        Random random = java.util.concurrent.ThreadLocalRandom.current();
 
         List<Integer> times = Arrays.asList(1000, 6000, 13000);
         int tickValue = times.get(random.nextInt(times.size()));
-        Objects.requireNonNull(Random_Item_Challenge.server.getWorld(World.OVERWORLD)).setTimeOfDay(tickValue);
+        Random_Item_Challenge.executeCommandNow("time set " + tickValue);
 
         Map<String, Integer> weatherOdds = Map.of(
                 "rain", 10,
@@ -331,11 +432,11 @@ public class Items {
 
         assert selectedWeather != null;
         if (selectedWeather.equals("rain")) {
-            Objects.requireNonNull(Random_Item_Challenge.server.getWorld(World.OVERWORLD)).setWeather(0, 0, true, false);
+            Random_Item_Challenge.executeCommandNow("weather rain");
         } else if (selectedWeather.equals("thunder")) {
-            Objects.requireNonNull(Random_Item_Challenge.server.getWorld(World.OVERWORLD)).setWeather(0, 0, true, true);
+            Random_Item_Challenge.executeCommandNow("weather thunder");
         } else {
-            Objects.requireNonNull(Random_Item_Challenge.server.getWorld(World.OVERWORLD)).setWeather(0, 0, false, false);
+            Random_Item_Challenge.executeCommandNow("weather clear");
         }
     }
 

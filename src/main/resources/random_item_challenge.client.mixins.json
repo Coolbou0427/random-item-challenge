@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "jaxon.ric.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractContainerScreenTooltipMixin",
+    "BundleItemBarMixin",
+    "ClientBundleTooltipMixin",
+    "ClientTextTooltipAccessor",
+    "ClientTooltipLayoutMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

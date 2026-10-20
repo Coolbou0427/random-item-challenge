@@ -6,64 +6,70 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.Team;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
-import java.util.*;
+import jaxon.ric.Random_Item_Challenge;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Scoreboard;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static jaxon.ric.Random_Item_Challenge.server;
 
 public class TeamsCommand {
     public static HashMap<String, List<String>> teams = new HashMap<>();
     public static HashMap<String, List<String>> teamsWithoutRemovals = new HashMap<>();
-    public static HashMap<String, Formatting> teamColors = new HashMap<>();
+    public static HashMap<String, ChatFormatting> teamColors = new HashMap<>();
     public static HashMap<String, String> teamDisplayNames = new HashMap<>();
 
-    private static final Formatting[] POSSIBLE_COLORS = {
-            Formatting.BLUE, Formatting.RED, Formatting.GREEN, Formatting.YELLOW,
-            Formatting.GOLD, Formatting.DARK_PURPLE, Formatting.LIGHT_PURPLE, Formatting.AQUA
+    private static final ChatFormatting[] POSSIBLE_COLORS = {
+            ChatFormatting.BLUE, ChatFormatting.RED, ChatFormatting.GREEN, ChatFormatting.YELLOW,
+            ChatFormatting.GOLD, ChatFormatting.DARK_PURPLE, ChatFormatting.LIGHT_PURPLE, ChatFormatting.AQUA
     };
 
-    private static Formatting lastAssignedTeamColor = null;
+    private static ChatFormatting lastAssignedTeamColor = null;
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("jointeam")
-                .then(CommandManager.argument("teamName", StringArgumentType.greedyString())
+    private static final Set<String> ricTeamIds = new HashSet<>();
+
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal("jointeam")
+                .then(Commands.argument("teamName", StringArgumentType.greedyString())
                         .suggests(TeamsCommand::suggestTeams)
                         .executes(TeamsCommand::joinTeam)));
 
-        dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("teams")
-                .then(CommandManager.literal("reset")
+        dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal("teams")
+                .then(Commands.literal("reset")
                         .executes(TeamsCommand::resetTeams)));
     }
 
-    private static CompletableFuture<Suggestions> suggestTeams(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> suggestTeams(CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
         for (String display : teamDisplayNames.values()) builder.suggest(capitalizeDisplay(display));
         return builder.buildFuture();
     }
 
-    private static int joinTeam(CommandContext<ServerCommandSource> context) {
+    private static int joinTeam(CommandContext<CommandSourceStack> context) {
         String displayName = StringArgumentType.getString(context, "teamName").trim();
         if (displayName.isEmpty()) {
-            context.getSource().sendError(Text.of("Team name cannot be empty"));
+            context.getSource().sendFailure(Component.nullToEmpty("Team name cannot be empty"));
             return 0;
         }
 
-        ServerPlayerEntity playerEntity = context.getSource().getPlayer();
+        ServerPlayer playerEntity = context.getSource().getPlayer();
         if (playerEntity == null) return 0;
 
         String player = playerEntity.getName().getString();
         Scoreboard board = context.getSource().getServer().getScoreboard();
 
         String id = sanitize(displayName);
-        Team current = board.getScoreHolderTeam(player);
+        PlayerTeam current = board.getPlayersTeam(player);
 
         if (current != null && current.getName().equals(id)) {
             rollColour(id, current);
@@ -72,7 +78,7 @@ public class TeamsCommand {
         }
 
         if (current != null) {
-            board.removeScoreHolderFromTeam(player, current);
+            board.removePlayerFromTeam(player, current);
             removePlayerFromTeamLists(player);
             cleanupEmptyTeam(current.getName(), board);
         } else {
@@ -84,15 +90,18 @@ public class TeamsCommand {
         teamDisplayNames.putIfAbsent(id, canonicalDisplay);
 
         if (!teamColors.containsKey(id)) teamColors.put(id, pickColour());
-        Formatting colour = teamColors.get(id);
+        ChatFormatting colour = teamColors.get(id);
 
-        Team mcTeam = board.getTeam(id);
-        if (mcTeam == null) mcTeam = board.addTeam(id);
-        mcTeam.setDisplayName(Text.of(capitalizeDisplay(canonicalDisplay)));
-        mcTeam.setColor(colour);
+        PlayerTeam mcTeam = board.getPlayerTeam(id);
+        if (mcTeam == null) mcTeam = board.addPlayerTeam(id);
+        mcTeam.setDisplayName(Component.nullToEmpty(capitalizeDisplay(canonicalDisplay)));
+        mcTeam.setColor(java.util.Optional.ofNullable(net.minecraft.world.scores.TeamColor.byName(colour.name().toLowerCase(Locale.ROOT))));
+        mcTeam.setAllowFriendlyFire(false);
+
+        ricTeamIds.add(id);
 
         if (!teams.get(id).contains(player)) teams.get(id).add(player);
-        board.addScoreHolderToTeam(player, mcTeam);
+        board.addPlayerToTeam(player, mcTeam);
 
         broadcastTeams();
         return 1;
@@ -110,46 +119,110 @@ public class TeamsCommand {
             teams.remove(teamId);
             teamColors.remove(teamId);
             teamDisplayNames.remove(teamId);
+            ricTeamIds.remove(teamId);
         }
 
-        Team t = board.getTeam(teamId);
-        if (t != null && t.getPlayerList().isEmpty()) {
-            board.removeTeam(t);
+        PlayerTeam t = board.getPlayerTeam(teamId);
+        if (t != null && t.getPlayers().isEmpty()) {
+            board.removePlayerTeam(t);
         }
     }
 
-    public static void clearAllTeams(ServerCommandSource src, boolean sendFeedback) {
+    public static void createOrUpdateTeam(Scoreboard board, String id, String displayName) {
+        if (board == null) return;
+        if (id == null || id.isBlank()) return;
+
+        teams.computeIfAbsent(id, k -> new ArrayList<>());
+
+        String canonicalDisplay = displayName == null ? id.replace('_', ' ') : displayName.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+        teamDisplayNames.putIfAbsent(id, canonicalDisplay);
+
+        if (!teamColors.containsKey(id)) teamColors.put(id, pickColour());
+        ChatFormatting colour = teamColors.get(id);
+
+        PlayerTeam mcTeam = board.getPlayerTeam(id);
+        if (mcTeam == null) mcTeam = board.addPlayerTeam(id);
+
+        mcTeam.setDisplayName(Component.nullToEmpty(capitalizeDisplay(canonicalDisplay)));
+        mcTeam.setColor(java.util.Optional.ofNullable(net.minecraft.world.scores.TeamColor.byName(colour.name().toLowerCase(Locale.ROOT))));
+        mcTeam.setAllowFriendlyFire(false);
+
+        ricTeamIds.add(id);
+    }
+
+    public static void keepRicPlayerFriendlyFireDisabled(Scoreboard board) {
+        if (board == null) return;
+        Set<String> teamIds = new HashSet<>(ricTeamIds);
+        teamIds.addAll(teams.keySet());
+        for (String id : teamIds) {
+            PlayerTeam team = board.getPlayerTeam(id);
+            if (team != null) team.setAllowFriendlyFire(false);
+        }
+    }
+
+    public static void addPlayerToTeam(Scoreboard board, String playerName, String teamId) {
+        if (board == null) return;
+        if (playerName == null || playerName.isBlank()) return;
+        if (teamId == null || teamId.isBlank()) return;
+
+        PlayerTeam current = board.getPlayersTeam(playerName);
+        if (current != null) {
+            board.removePlayerFromTeam(playerName, current);
+        }
+
+        removePlayerFromTeamLists(playerName);
+
+        teams.computeIfAbsent(teamId, k -> new ArrayList<>());
+        if (!teams.get(teamId).contains(playerName)) teams.get(teamId).add(playerName);
+
+        PlayerTeam t = board.getPlayerTeam(teamId);
+        if (t != null) {
+            board.addPlayerToTeam(playerName, t);
+        }
+    }
+
+
+    public static void clearAllTeams(CommandSourceStack src, boolean sendFeedback) {
+        Scoreboard board = src.getServer().getScoreboard();
+
+        for (String teamId : new ArrayList<>(ricTeamIds)) {
+            PlayerTeam t = board.getPlayerTeam(teamId);
+            if (t != null) {
+                board.removePlayerTeam(t);
+            }
+        }
+
         teams.clear();
         teamsWithoutRemovals.clear();
         teamColors.clear();
         teamDisplayNames.clear();
+        ricTeamIds.clear();
         lastAssignedTeamColor = null;
 
-        Scoreboard board = src.getServer().getScoreboard();
-        for (Team t : new ArrayList<>(board.getTeams())) board.removeTeam(t);
-
         if (sendFeedback) {
-            src.sendFeedback(() -> Text.literal("All RIC teams cleared.").formatted(Formatting.AQUA), false);
+            src.sendSuccess(() -> Component.literal("All RIC teams cleared.").withStyle(ChatFormatting.AQUA), false);
         }
     }
 
-    private static void rollColour(String id, Team team) {
-        Formatting current = team.getColor();
-        List<Formatting> pool = new ArrayList<>(Arrays.asList(POSSIBLE_COLORS));
+    private static void rollColour(String id, PlayerTeam team) {
+        ChatFormatting current = team.getColor()
+                .map(color -> ChatFormatting.valueOf(color.name()))
+                .orElse(ChatFormatting.WHITE);
+        List<ChatFormatting> pool = new ArrayList<>(Arrays.asList(POSSIBLE_COLORS));
         pool.remove(current);
         pool.removeAll(teamColors.values());
         if (pool.isEmpty()) {
             pool = new ArrayList<>(Arrays.asList(POSSIBLE_COLORS));
             pool.remove(current);
         }
-        Formatting newColour = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
-        team.setColor(newColour);
+        ChatFormatting newColour = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        team.setColor(java.util.Optional.ofNullable(net.minecraft.world.scores.TeamColor.byName(newColour.name().toLowerCase(Locale.ROOT))));
         teamColors.put(id, newColour);
         lastAssignedTeamColor = newColour;
     }
 
-    private static Formatting pickColour() {
-        List<Formatting> pool = new ArrayList<>(Arrays.asList(POSSIBLE_COLORS));
+    private static ChatFormatting pickColour() {
+        List<ChatFormatting> pool = new ArrayList<>(Arrays.asList(POSSIBLE_COLORS));
         pool.removeAll(teamColors.values());
 
         if (lastAssignedTeamColor != null && pool.size() > 1) {
@@ -163,47 +236,37 @@ public class TeamsCommand {
             }
         }
 
-        Formatting chosen = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        ChatFormatting chosen = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
         lastAssignedTeamColor = chosen;
         return chosen;
     }
 
     private static void broadcastTeams() {
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            player.sendMessage(Text.literal("Current Teams:").formatted(Formatting.GREEN), false);
+        for (ServerPlayer player : Random_Item_Challenge.server.getPlayerList().getPlayers()) {
+            player.sendSystemMessage(Component.literal("Current Teams:").withStyle(ChatFormatting.GREEN));
         }
 
         teams.forEach((id, members) -> {
             if (members == null || members.isEmpty()) return;
 
-            Formatting c = teamColors.getOrDefault(id, Formatting.AQUA);
+            ChatFormatting c = teamColors.getOrDefault(id, ChatFormatting.AQUA);
             String name = teamDisplayNames.getOrDefault(id, id.replace('_', ' '));
             String display = capitalizeDisplay(name.replace('_', ' '));
 
-            Text line = Text.literal(display + ": ").formatted(Formatting.DARK_GRAY)
-                    .append(Text.literal(String.join(", ", members)).formatted(c));
+            Component line = Component.literal(display + ": ").withStyle(ChatFormatting.DARK_GRAY)
+                    .append(Component.literal(String.join(", ", members)).withStyle(c));
 
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                player.sendMessage(line, false);
+            for (ServerPlayer player : Random_Item_Challenge.server.getPlayerList().getPlayers()) {
+                player.sendSystemMessage(line);
             }
         });
     }
 
-    private static int resetTeams(CommandContext<ServerCommandSource> context) {
-        teams.clear();
-        teamsWithoutRemovals.clear();
-        teamColors.clear();
-        teamDisplayNames.clear();
-        lastAssignedTeamColor = null;
+    private static int resetTeams(CommandContext<CommandSourceStack> context) {
+        clearAllTeams(context.getSource(), false);
 
-        Scoreboard board = context.getSource().getServer().getScoreboard();
-        for (Team t : new ArrayList<>(board.getTeams())) board.removeTeam(t);
-
-        GoCommand.teamMode = false;
-        GoCommand.numberPerTeam = 0;
-
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            player.sendMessage(Text.literal("All teams have been reset.").formatted(Formatting.RED), false);
+        for (ServerPlayer player : Random_Item_Challenge.server.getPlayerList().getPlayers()) {
+            player.sendSystemMessage(Component.literal("RIC teams have been reset.").withStyle(ChatFormatting.RED));
         }
         return 1;
     }
@@ -213,7 +276,7 @@ public class TeamsCommand {
         return id.length() > 16 ? id.substring(0, 16) : id;
     }
 
-    private static String capitalizeDisplay(String s) {
+    public static String capitalizeDisplay(String s) {
         if (s == null || s.isEmpty()) return s;
         String[] parts = s.split("[ _]+");
         StringBuilder sb = new StringBuilder();
@@ -226,4 +289,5 @@ public class TeamsCommand {
         }
         return sb.toString();
     }
+
 }

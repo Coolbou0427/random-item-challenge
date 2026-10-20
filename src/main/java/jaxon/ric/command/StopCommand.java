@@ -3,30 +3,29 @@ package jaxon.ric.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import jaxon.ric.Random_Item_Challenge;
-import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.PermissionLevel;
-import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 
 public class StopCommand {
     public static volatile boolean isRunning = false;
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                CommandManager.literal("halt")
-                        .requires(src -> Permissions.check(src,"ric.halt")|| src.getPermissions().hasPermission(new Permission.Level(PermissionLevel.GAMEMASTERS)))
+                Commands.literal("halt")
+                        .requires(src -> src.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS)))
                         .executes(StopCommand::stopEverything)
         );
     }
 
-    public static int stopEverything(CommandContext<ServerCommandSource> context) {
+    public static int stopEverything(CommandContext<CommandSourceStack> context) {
         try {
             isRunning = false;
             GoCommand.testMode = false;
@@ -34,7 +33,7 @@ public class StopCommand {
 
             Random_Item_Challenge.resetGameState();
 
-            broadcastTitle(context.getSource().getServer(), Text.literal("Stopped").formatted(Formatting.RED));
+            broadcastTitle(context.getSource().getServer(), Component.literal("Stopped").withStyle(ChatFormatting.RED));
             resetWorldBorder(context.getSource().getServer());
 
             Random_Item_Challenge.clearRicTeams(context.getSource().getServer().getScoreboard());
@@ -46,17 +45,17 @@ public class StopCommand {
         }
     }
 
-    private static void broadcastTitle(MinecraftServer srv, Text title) {
-        TitleFadeS2CPacket timings = new TitleFadeS2CPacket(10, 70, 20);
-        TitleS2CPacket titlePacket = new TitleS2CPacket(title);
-        for (ServerPlayerEntity player : srv.getPlayerManager().getPlayerList()) {
-            player.networkHandler.sendPacket(timings);
-            player.networkHandler.sendPacket(titlePacket);
+    private static void broadcastTitle(MinecraftServer srv, Component title) {
+        ClientboundSetTitlesAnimationPacket timings = new ClientboundSetTitlesAnimationPacket(10, 70, 20);
+        ClientboundSetTitleTextPacket titlePacket = new ClientboundSetTitleTextPacket(title);
+        for (ServerPlayer player : srv.getPlayerList().getPlayers()) {
+            player.connection.send(timings);
+            player.connection.send(titlePacket);
         }
     }
 
     private static void resetWorldBorder(MinecraftServer srv) {
-        for (var world : srv.getWorlds()) {
+        for (var world : srv.getAllLevels()) {
             world.getWorldBorder().setSize(4.9999999E7);
         }
     }

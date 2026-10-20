@@ -37,6 +37,11 @@ Stops the game immediately
 ### Settings
 
 ```
+/ric settings drops
+```
+Opens the weighted drops menu
+
+```
 /ricsettings delay <seconds>
 ```
 Sets the time between item drops

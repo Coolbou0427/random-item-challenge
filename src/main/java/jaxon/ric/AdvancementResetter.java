@@ -1,11 +1,11 @@
 package jaxon.ric;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.advancement.AdvancementEntry;
-import net.minecraft.advancement.AdvancementProgress;
-import net.minecraft.advancement.PlayerAdvancementTracker;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.PlayerAdvancements;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -38,7 +38,7 @@ public final class AdvancementResetter {
                 UUID uuid = e.getKey();
                 it.remove();
 
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                ServerPlayer player = server.getPlayerList().getPlayer(uuid);
                 if (player == null) continue;
 
                 resetPlayer(server, player);
@@ -46,19 +46,19 @@ public final class AdvancementResetter {
         });
     }
 
-    private static void resetPlayer(MinecraftServer server, ServerPlayerEntity player) {
-        PlayerAdvancementTracker tracker = player.getAdvancementTracker();
+    private static void resetPlayer(MinecraftServer server, ServerPlayer player) {
+        PlayerAdvancements tracker = player.getAdvancements();
 
-        for (AdvancementEntry entry : server.getAdvancementLoader().getAdvancements()) {
-            AdvancementProgress progress = tracker.getProgress(entry);
-            if (!progress.isAnyObtained()) continue;
+        for (AdvancementHolder entry : server.getAdvancements().getAllAdvancements()) {
+            AdvancementProgress progress = tracker.getOrStartProgress(entry);
+            if (!progress.hasProgress()) continue;
 
-            for (String criterion : progress.getObtainedCriteria()) {
-                tracker.revokeCriterion(entry, criterion);
+            for (String criterion : progress.getCompletedCriteria()) {
+                tracker.revoke(entry, criterion);
             }
         }
 
-        tracker.sendUpdate(player, true);
+        tracker.flushDirty(player, true);
 
     }
 }
